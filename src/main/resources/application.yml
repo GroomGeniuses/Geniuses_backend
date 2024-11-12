@@ -1,0 +1,70 @@
+spring:
+  application:
+    name: login
+  output:
+    ansi:
+      enabled: ALWAYS
+  # H2 Setting Info (H2 Console에 접속하기 위한 설정정보 입력)
+  h2: # H2 DB를 웹에서 관리할 수 있는 기능
+    console:
+      enabled: true     # H2 Console을 사용할지 여부 (H2 Console은 H2 Database를 UI로 제공해주는 기능)
+      path: /h2-console # H2 Console의 Path
+  # Database Setting Info (배포시 실제 DB 연결 정보 입력)
+  datasource:
+    url: jdbc:h2:mem:~/webide # TODO: 추후 MySQL로 변경
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    show-sql: true          # 쿼리출력
+    properties:
+      hibernate:
+        format_sql: true        # 개행, 탭 등 보기편하게 출력
+#        use_sql_comments: true  # sql 과 함께 jpql 주석처리되어 콘솔창에 출력
+    generate-ddl: 'true'
+    hibernate:
+#      defer-datasource-initialization: true # Hibernate 초기화 이후 data.sql을 실행 (db 초기 data setting)
+      # SQL 문법지정
+      dialect: org.hibernate.dialect.H2Dialect            # H2
+#      dialect: org.hibernate.dialect.Oracle10gDialect     # Oracle
+#      dialect: org.hibernate.dialect.MySQL5InnoDBDialect  # TODO: 추후 MySQL로 변경
+      jdbc:
+        batch_size: 100     # 한번에 실행할 쿼리 양
+      # 실행 시 db table 설정 (실제 배포시 반드시 none으로 할 것!)
+      ddl-auto: create      # 기존테이블 삭제 후 다시생성 (DROP+CREATE)
+#      ddl-auto: create-drop # create와 동일 + 종료시점에 DROP
+#      ddl-auto: update      # 변경분만 반영 - TestDB
+#      ddl-auto: validate    # Entity와 table 정상매핑되었는지만 확인 - TestDB에 적합
+#      ddl-auto: none        # ddl-auto 사용하지 않음 - TODO: 실제 배포시 반드시 none으로 할 것!
+  # JWT
+  jwt:
+    secret: ${JWT_SECRET}
+  security:
+    oauth2:
+      client:
+        registration:
+          # https://console.cloud.google.com/
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          # https://developers.kakao.com
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID} #[kakao developer 왼쪽 탭 > 앱설정 > 앱 키 > RESTAPI키 ]
+            client-secret: ${KAKAO_CLIENT_SECRET} #[kakao developer 왼쪽 탭 > 제품설정 > 카카오로그인 > 보안 > client secret ]
+            scope:
+              - account_email
+              - profile_nickname
+              - profile_image
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
+            client-authentication-method: client_secret_post
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
