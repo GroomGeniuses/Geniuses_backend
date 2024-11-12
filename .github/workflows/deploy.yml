@@ -1,0 +1,47 @@
+name: deploy backend
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # 작업이 실행될 환경
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Gradle Wrapper 실행 권한 추가
+        run: chmod +x gradlew
+      - name: 환경변수 설정
+        run: echo "${{ secrets.APPLICATION_YML_BACKEND}}" > ./src/main/resources/application.yml
+      - name: Gradle로 빌드(CI)
+        run: ./gradlew build
+      
+      # docker login
+      - run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - run: docker build -t goorm-backend ./
+
+      - name: Generate deployment package
+        run: zip -r deploy.zip . -x '*.git*'
+
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v18
+        with:
+          # AWS
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          # AWS Elastic Beanstalk 환경 application 명
+          application_name: goorm-backend
+          # AWS Elastic Beanstalk 환경 명
+          environment_name: Goorm-backend-env
+          # AWS S3 버킷 명
+          existing_bucket_name: elasticbeanstalk-ap-northeast-2-047719635504
+          region: ap-northeast-2
+          version_label: ${{ github.sha }}
+          deployment_package: deploy.zip
+          wait_for_environment_recovery: 500
